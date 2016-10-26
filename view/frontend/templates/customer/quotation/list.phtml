@@ -1,0 +1,59 @@
+<?php
+/**
+ * Copyright © 2016 Magento. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+// @codingStandardsIgnoreFile
+
+?>
+<?php $_orders = $block->getOrders(); ?>
+<?php echo $block->getChildHtml('info');?>
+<?php if ($_orders && count($_orders)): ?>
+    <div class="table-wrapper orders-history">
+        <table class="data table table-order-items history" id="my-orders-table">
+            <caption class="table-caption"><?php /* @escapeNotVerified */ echo __('Orders') ?></caption>
+            <thead>
+                <tr>
+                    <th scope="col" class="col id"><?php echo __('Quotation #') ?></th>
+                    <th scope="col" class="col date"><?php echo __('Total Actual Price') ?></th>
+                    <th scope="col" class="col shipping"><?php echo __('Total Proposed Price') ?></th>
+                    <th scope="col" class="col total"><?php echo __('Status') ?></th>
+                    <th scope="col" class="col status"><?php echo __('Last Updated') ?></th>
+                    <th scope="col" class="col actions"><?php echo __('Actions') ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($_orders as $_order): ?>
+                    <tr>
+                         <td da ta-th="<?php echo $block->escapeHtml(__('Quotation')) ?>" class="col title">
+                            <?php echo $_order['id'] ?>
+                        </td>
+                        <td data-th="<?php echo $block->escapeHtml(__('Total Actual Price')) ?>" class="col title">
+                            <?php echo $this->priceFormat($_order['total_product_price']); ?>
+                        </td>
+                        <td data-th="<?php echo $block->escapeHtml(__('Total Proposed Price')) ?>" class="col title">
+                            <?php echo $this->priceFormat($_order['total_proposed_price']); ?>
+                        </td>
+                        <td data-th="<?php echo $block->escapeHtml(__('Quotation Status')) ?>" class="col title">
+                            <?php echo $block->getQuotationStatus($_order['quotation_status']); ?>
+                        </td>
+                        <td data-th="<?php echo $block->escapeHtml(__('Last Updated')) ?>" class="col title">
+                            <?php echo $this->gmtDate($_order['updated_at'], 'Y-m-d'); ?>
+                        </td>
+                        <td data-th="<?php echo $block->escapeHtml(__('Actions')) ?> " class="col actions">
+                            <a href="<?php echo $block->getViewUrl($_order['id']) ?>" class="action view">
+                                <span><?php echo __('View') ?></span>
+                            </a>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php if ($block->getPagerHtml()): ?>
+        <div class="order-products-toolbar toolbar bottom"><?php echo $block->getPagerHtml(); ?></div>
+    <?php endif ?>
+<?php else: ?>
+    <div class="message info empty"><span><?php /* @escapeNotVerified */ echo __('You have no Quotations.'); ?></span></div>
+<?php endif ?>

@@ -1,0 +1,281 @@
+<?php
+/**
+ * Cybage Quotation Plugin
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Open Software License (OSL 3.0)
+ * It is available on the World Wide Web at:
+ * http://opensource.org/licenses/osl-3.0.php
+ * If you are unable to access it on the World Wide Web, please send an email
+ * To: Support_Magento@cybage.com.  We will send you a copy of the source file.
+ *
+ * @category   Quotation Plugin
+ * @package    Cybage_Quotation
+ * @copyright  Copyright (c) 2014 Cybage Software Pvt. Ltd., India
+ *             http://www.cybage.com/pages/centers-of-excellence/ecommerce/ecommerce.aspx
+ * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ * @author     Cybage Software Pvt. Ltd. <Support_Magento@cybage.com>
+ */
+/** $block = Cybage\Quotation\Block\Quotationdetails * */
+$quotation = $block->getQuotationDetails();
+$totalProductPrice = 0;
+$totalProposedPrice = 0;
+$quotationId = 0;
+$quotationStatus = null;
+$helper = $this->helper('Cybage\Quotation\Helper\Data');
+?>
+<form action="<?php echo $this->_storeManager->getStore()->getBaseUrl() . "quotation/item/update"; ?>" 
+      id="update_quotation_form" method="post">
+    <input name="form_key" type="hidden" value="<?php echo $this->getFrmKey() ?>" />
+    <div class="table-wrapper">
+        <table width="100%" class="data table quotation-details">
+
+
+            <thead>
+                <tr>
+                    <th class="col title">
+                        <b><?php echo __('Product Image'); ?></b>
+                    </th>
+                    <th class="col title">
+                        <b><?php echo __('Product Name'); ?></b>
+                    </th>
+                    <th class="col title">
+                        <b><?php echo __('Quantity'); ?></b>
+                    </th>
+                    <th class="col title">
+                        <b><?php echo __('Price'); ?></b>
+                    </th>
+                    <th class="col title">
+                        <b><?php echo __('Proposed Price'); ?></b>
+                    </th>
+                    <?php if (in_array($quotation[0]['quotation_status'], array(2, 7))): ?>
+                        <th width="30%" class="col action">
+                            <b><?php echo __('Action'); ?></b>
+                        </th>
+                    <?php endif; ?>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($quotation as $key => $value) : ?>
+                    <?php
+                    $totalProductPrice = $value['total_product_price'];
+                    $totalProposedPrice = $value['total_proposed_price'];
+                    $quotationId = $value['id'];
+                    $quotationStatus = $value['quotation_status'];
+                    $deliveryDay = $value['delivery_day'];
+                    ?>
+                    <tr>
+                        <td  class="col title">
+                            <?php if ($value['type_id'] != 'configurable'): ?>
+                                <img  src="<?php echo $helper->getProductImaege($value['product_id']); ?>" width="50"/>
+                            <?php 
+                                elseif($value['type_id'] == 'configurable'): 
+                                $imgAtt = $helper->getConfigurableProductImaege($value['product_id'], unserialize($value['options']));
+                                ?>
+                                <img  src="<?php echo $imgAtt['img']; ?>" width="50"/>
+                            <?php endif; ?>
+                        </td>
+                        <td class="col title">
+                            <?php echo $value['name'] ?>
+                            <?php
+                            $options =@ $imgAtt['att'];
+
+                            if (!empty($options) && $value['type_id'] == 'configurable') {
+                                echo '<br/>';
+                                foreach ($options as $okey => $ovalue) {
+                                    echo $okey . ' : ' . $ovalue . '<br/>';
+                                }
+                            }
+                            ?>
+                        </td>
+                        <td class="col title">
+                            <?php if ($this->isUpdateAllowed($quotationStatus)): ?>
+                                <input type="text" 
+                                       class="qty"
+                                       name="qty_<?php echo $value['item_id'] ?>" 
+                                       data-id="<?php echo $value['item_id'] ?>"
+                                       value="<?php echo $value['qty'] ?>" 
+                                       data-validate="{required:true,'validate-greater-than-zero':true,integer:true,'validate-number':true}"
+                                       />
+                                   <?php else: ?>
+                                       <?php echo $value['qty'] ?>
+                                   <?php endif; ?>
+                            <input
+                                type="hidden"
+                                name="unit_price" 
+                                class="unit_price"  
+                                id="unit_price_<?php echo $value['item_id'] ?>"
+                                value="<?php echo @$value['product_price'] / $value['qty']; ?>" />
+                        </td>
+                        <td class="col title">
+                            <span id="product_price_<?php echo $value['item_id'] ?>">
+                                <?php echo $this->priceFormat($value['product_price']); ?>
+                            </span>
+                        </td>
+                        <td class="col title">
+                            <?php if ($this->isUpdateAllowed($quotationStatus)): ?>
+                                <input type="text" 
+                                       name="proposed_price_<?php echo $value['item_id'] ?>" 
+                                       value="<?php echo $value['proposed_price'] ?>" 
+                                       class="required-entry"
+                                       data-validate="{required:true,'validate-greater-than-zero':true,'validate-number':true}"
+                                       />
+                                   <?php else: ?>
+                                       <?php echo $this->priceFormat($value['proposed_price']); ?>
+                                   <?php endif; ?>
+                        </td>
+                        <td class="col title">
+                            <?php if (in_array($value['quotation_status'], array(2, 7))): ?>
+                                <a href="<?php echo $this->_storeManager->getStore()->getBaseUrl() . "quotation/item/delete/id/{$value['item_id']}"; ?>" >
+                                    <?php echo __('Remove'); ?>
+                                </a>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+
+                <tr>
+                    <td colspan="5" class="col title">
+                        <?php
+                        $comments = $this->getComments($quotationId);
+                        foreach ($comments->getData() as $value) {
+                            echo '<b>'.__('Commented By ').'</b>';
+                            echo ($value['commentted_by'] == 'c') ? 'You: ' : 'Admin: ';
+                            echo $value['comment'];
+                            echo '<br>';
+                        }
+                        ?>
+                    </td>
+                    <td colspan="5" align="left" class="col title">
+                        <b style="width:36%; display: inline-block;"><?php echo __('Actual Price'); ?>: </b> <?php echo $this->priceFormat($totalProductPrice); ?>
+                        <br/>
+                        <b style="width:36%; display: inline-block;"><?php echo __('Proposed Price'); ?>: </b>  <?php echo $this->priceFormat($totalProposedPrice); ?>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="5" align="right" class="col title">
+                        <?php if (/* $quotationStatus == 0 || */ $quotationStatus == 2): ?>
+                        <b style="float:left;"><?php echo __('Comment'); ?>: </b>
+                            <textarea name='comment'></textarea>
+                        <?php endif; ?>
+                        <input type="hidden" name="quotationid" value="<?php echo $quotationId; ?>"/>
+                    </td>
+                    <td class="col action">
+                        <?php if ($quotationStatus == 7 || $quotationStatus == 2): ?>
+                            <label><b><?php echo __('Within how many days you need delivery..?') ?></b></label>
+                            <?php /* ?>
+                            <input type="text"
+                                   data-validate="{'validate-greater-than-zero':true,'validate-number':true}"
+                                   id="calendar_inputField" 
+                                   name="delivery_day" 
+                                   value="<?php echo $deliveryDay; ?>"
+                                   title="<?php echo __('These days will be counted after quotaion approval. Please leave blank for default delivery.') ?>">
+                            <?php */ ?>
+                            <select name="delivery_day" >
+                                <option value=""><?php echo _('No Preference') ?></option>
+                                <option <?php echo ($deliveryDay==3)?'selected':''; ?> value="3"><?php echo _('1-3 Days.') ?></option>
+                                <option <?php echo ($deliveryDay==7)?'selected':''; ?> value="7"><?php echo _('4-7 Days.') ?></option>
+                                <option <?php echo ($deliveryDay==10)?'selected':''; ?> value="10"><?php echo _('7-10 Days.') ?></option>
+                            </select>
+                            <button type="submit" name="submit" value="submit" class="action primary" onclick="return confirm('Once it is submitted you will not be able to change again. Are you sure..?')">Submit Quotation</button>
+                            <button type="submit" name="submit" value="update" class="action primary">Update Quotation</button>
+                        <?php elseif ($quotationStatus == 1): ?>
+                            <input name="convert_to_cart" type="hidden" value="1"/>
+                            <label><b><?php echo ($deliveryDay)?__('Delivery required within %1 days',$deliveryDay):''; ?></b></label><?php //echo ; ?>
+                            <button type="submit" name="convert_to_cart_btn" value="update" class="action primary">Purchase Item(s)</button>
+            <!--                    <input type="submit" name="convert_to_cart" value="Purchase Item(s)" />
+                            <input id="tea-submit" type="submit" name="convert_to_cart" value="Tea">
+                            <input id="coffee-submit" type="submit" name="submit" value="Coffee">-->
+                        <?php else: ?>
+                            <label><b><?php echo ($deliveryDay)? __('Delivery required within %1 days',$deliveryDay):''; ?></b></label>
+                        <?php endif; ?>
+
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</form>
+<script type="text/javascript">
+
+    require([
+        'jquery',
+        'mage/mage'
+    ], function ($) {
+        /*$("#calendar_inputField").calendar({
+            buttonText: "<?php echo __('Select Date') ?>",
+            minDate: 0
+        });*/
+        
+        var dataForm = $('#update_quotation_form');
+        dataForm.mage('validation', {
+            submitHandler: function (f)
+            {
+                if (f && f.elements)
+                {
+                    for (var i = f.elements.length; i--; )
+                    {
+                        var o = f.elements[i];
+
+                        if (o.type.toLowerCase() == "hidden") {
+                            continue;
+                        }
+                        if (o.tagName.toLowerCase() == "input"
+                                && o.value == o.defaultValue
+                                && (!o.disabled || o.disabled.toLowerCase() == "disabled"))
+                        {
+                            if (!(o.disabled = true))
+                            {
+                                o.disabled = "disabled";
+                            }
+                        }
+                    }
+                }
+                f.submit();
+            }
+        });
+        function getCurrencySign(price) {
+            var demo = price.trim();
+            var currency = '';
+            var curflag = false;
+            for (var i = 0, len = demo.length; i < len; i++) {
+                //alert(demo[i]);
+                if (isNaN(demo[i]) && (i == 0 || curflag) && (demo[i] != '.' || demo[i] != ',')) {
+                    currency += demo[i];
+                    curflag = true;
+                } else {
+                    if (!isNaN(demo[i])) {
+                        break;
+                    }
+                }
+                if (!isNaN(demo[i]) && i == 0 && !curflag) {
+                    continue;
+                }
+                if (!isNaN(demo[i]) && i != 0 && (demo[i] != '.' || demo[i] != ',') && !curflag) {
+                    continue;
+                } else {
+                    if (!curflag) {
+                        currency += demo[i];
+                    }
+                }
+            }
+            return currency;
+        }
+        $('body').on('change', '.qty', function () {
+            var th = $(this);
+            var id = th.data('id');
+            var unit_price_val = $('#unit_price_' + id).val();
+            var product_price = unit_price_val * th.val();
+            var product_price = $('#product_price_' + id);
+            var product_price_val = product_price.text();
+            var currencySign = getCurrencySign(product_price_val);
+            var produuct_price = unit_price_val * th.val();
+
+            product_price.text(currencySign + produuct_price.toPrecision(produuct_price.toString().length + 2));
+//            alert();
+        })
+        //$( document ).tooltip();
+
+    });
+</script>   
