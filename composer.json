@@ -1,5 +1,5 @@
 {
-    "name": "cybage/module-quotation",
+    "name": "cybagequotation/module-quotation",
     "description": "A cybage extension for quotation.",
     "type": "magento2-module",
     "version": "2.0.1",
